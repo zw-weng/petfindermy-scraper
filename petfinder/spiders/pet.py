@@ -15,70 +15,78 @@ class PetSpider(scrapy.Spider):
     def parse(self, response):
         pet_id = response.meta['pet_id']
 
-        # Pet not found
         if "Pet Not Found" in response.text or response.status == 404:
             self.logger.info(f"Pet ID {pet_id} not found.")
             return
 
-        def extract_with_css(query):
-            return response.css(query).get(default="N/A").strip()
-
         item = PetfinderItem()
-
         item['pet_id'] = pet_id
-        item['name'] = extract_with_css('div.pet_title td[align="center"]::text')
 
-        # Default N/A for all fields
-        fields = [
-            'type', 'species', 'profile', 'amount', 'vaccinated', 'dewormed',
-            'spayed', 'condition', 'body', 'color', 'location', 'posted', 'price',
-            'uploader_type', 'uploader_name', 'status'
-        ]
-        for field in fields:
-            item[field] = "N/A"
+        # Extract pet name
+        pet_title_tag = response.css('div.pet_title')
+        item['name'] = pet_title_tag.xpath('.//td[@align="center"]/text()').get("").strip() if pet_title_tag else "N/A"
 
-        # Correct parsing of pet profile table
-        rows = response.xpath('//table[@class="pet_box"]//td[@valign="middle"]//table//tr')
+        # Extract details from info table
+        info_table = response.css('table.pet_box')
+        pet_details = {}
+        
+        if info_table:
+            rows = info_table.css('tr')
+            for row in rows:
+                cols = row.css('td')
+                if len(cols) >= 2:
+                    key_tag = cols[0].css('b::text').get()
+                    if key_tag:
+                        key = key_tag.strip().replace(":", "")
+                        value = cols[1].xpath('string()').get().strip()
+                        pet_details[key] = value
 
+        # Type and Species
+        item['type'] = next(iter(pet_details.keys()), "N/A")
+        item['species'] = pet_details.get(item['type'], "N/A")
+
+        # Add other details to item
+        item['profile'] = pet_details.get('Profile', 'N/A')
+        item['amount'] = pet_details.get('Amount', 'N/A')
+        item['vaccinated'] = pet_details.get('Vaccinated', 'N/A')
+        item['dewormed'] = pet_details.get('Dewormed', 'N/A')
+        item['spayed'] = pet_details.get('Spayed', 'N/A')
+        item['condition'] = pet_details.get('Condition', 'N/A')
+        item['body'] = pet_details.get('Body', 'N/A')
+        item['color'] = pet_details.get('Color', 'N/A')
+        item['location'] = pet_details.get('Location', 'N/A')
+        item['posted'] = pet_details.get('Posted', 'N/A')
+
+        # Price/Adoption Fee
+        adoption_fee = "N/A"
+        rows = info_table.css('tr')
         for row in rows:
-            label = row.xpath('.//td[1]/b/text()').get()
-            value = row.xpath('.//td[2]//text()').get()
+            cols = row.css('td')
+            if len(cols) >= 2:
+                key_tag = cols[0].css('b::text').get()
+                if key_tag and 'Adoption Fee' in key_tag:
+                    fee_tag = cols[1].css('b::text').get()
+                    if fee_tag:
+                        adoption_fee = fee_tag.strip()
+                    else:
+                        adoption_fee = cols[1].xpath('string()').get().strip()
+        item['price'] = adoption_fee
 
-            if label and value:
-                label = label.strip()
-                value = value.strip()
+        # Uploader Type and Name
+        uploader_td = response.xpath('//td[@align="left" and @width="130" and @valign="middle"]')
+        uploader_type = "N/A"
+        uploader_name = "N/A"
 
-                if label in ["Dog", "Cat", "Rabbit", "Hamster", "Bird", "Turtle", "Fish", "Reptile"]:
-                    item['type'] = label
-                    item['species'] = value
-                elif label == "Profile":
-                    item['profile'] = value
-                elif label == "Amount":
-                    item['amount'] = value
-                elif label == "Vaccinated":
-                    item['vaccinated'] = value
-                elif label == "Dewormed":
-                    item['dewormed'] = value
-                elif label == "Spayed" or label == "Neutered":  # some pages use "Neutered"
-                    item['spayed'] = value
-                elif label == "Condition":
-                    item['condition'] = value
-                elif label == "Body":
-                    item['body'] = value
-                elif label == "Color":
-                    item['color'] = value
-                elif label == "Location":
-                    item['location'] = value
-                elif label == "Posted":
-                    item['posted'] = value
-                elif label == "Adoption Fee":
-                    item['price'] = value
+        if uploader_td:
+            uploader_type = uploader_td.css('font::text').get("").strip()
+            uploader_name_tag = uploader_td.css('a.darkgrey::text').get()
+            uploader_name = uploader_name_tag.strip() if uploader_name_tag else "N/A"
 
-        # Uploader
-        item['uploader_type'] = extract_with_css('td[width="130"] font::text')
-        item['uploader_name'] = extract_with_css('td[width="130"] a.darkgrey::text')
+        item['uploader_type'] = uploader_type
+        item['uploader_name'] = uploader_name
 
-        # Status (Adopted / For Adoption)
-        item['status'] = extract_with_css('div.pet_label::text')
+        # Status
+        status_tag = response.css('div.pet_label::text').get()
+        item['status'] = status_tag.strip() if status_tag else "N/A"
 
         yield item

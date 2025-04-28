@@ -1,3 +1,3 @@
 Pet ID,Name,Type,Species,Profile,Amount,Vaccinated,Dewormed,Spayed,Condition,Body,Color,Location,Posted,Price,Uploader Type,Uploader Name,Status
-71001,Blackie,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,Fosterer,Jesscet,Adopted
-71002,Carly,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,Rescuer,AileenLee,Adopted
+71001,Blackie,Dog,Mixed Breed,"Female, 10 Years 1 Month",N/A,Yes,Yes,No,Healthy,"Medium Size, Short Fur",Black,"Cheras, Selangor",10 Aug 2015 (Updated 24 Sep 2015),FREE,Fosterer,Jesscet,Adopted
+71002,Carly,Dog,Poodle,"Female, 14 Years 10 Months",N/A,Yes,Yes,Yes,Healthy,"Small Size, Long Fur",Brown,"Kuala Lumpur, Selangor",10 Aug 2015 (Updated 12 Aug 2015),FREE,Rescuer,AileenLee,Adopted

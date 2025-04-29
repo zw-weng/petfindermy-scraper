@@ -8,7 +8,7 @@ class PetSpider(scrapy.Spider):
     # start_urls = ["https://www.petfinder.my/pets/93086/"]
     
     def start_requests(self):
-        for pet_id in range(71001, 71003):  # from 71001 to 105000 inclusive
+        for pet_id in range(71001, 88252):  # from 71001 to 105000 inclusive
             url = f'https://www.petfinder.my/pets/{pet_id}/'
             yield scrapy.Request(url, callback=self.parse, meta={'pet_id': pet_id})
 
